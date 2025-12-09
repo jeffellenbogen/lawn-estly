@@ -20,12 +20,10 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.3
- * - Improved Scale Tool:
- * 1. Tap measurement text to edit value.
- * 2. Support for Click-Move-Click drawing on desktop.
- * 3. Reset Scale button allows redrawing.
- * 4. Persistent drag handles for adjustment.
+ * LAWN ESTLY - v3.9.4
+ * - Smart Interaction: Prioritizes dragging existing points over creating new ones.
+ * - Unified Editing: Works in both IDLE and DRAWING modes.
+ * - Refined Vertex Logic: Prevents accidental point creation when refining shapes.
  */
 
 // --- Helper Math Functions ---
@@ -348,7 +346,7 @@ export default function App() {
   const [scaleFactor, setScaleFactor] = useState(null); 
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  const [dragTarget, setDragTarget] = useState(null); // { type: 'poly'|'calib', index, pointIndex, p1/p2 }
+  const [dragTarget, setDragTarget] = useState(null); // { type: 'poly'|'calib'|'current', index, pointIndex, p1/p2 }
   const [isDrawingScale, setIsDrawingScale] = useState(false); // For click-move-click logic
   
   // Canvas Resolution State (Fix for disappearing images)
@@ -569,29 +567,26 @@ export default function App() {
         return;
     }
 
-    // Check for IDLE mode dragging first (vertices or calibration endpoints)
-    if (mode === 'IDLE' || mode === 'CALIBRATING') {
-        // Check calibration line
-        if (calibrationLine) {
-            if (isClose(calibrationLine.p1, clientX, clientY)) {
-                setDragTarget({ type: 'calib', point: 'p1' });
-                return;
-            }
-            if (isClose(calibrationLine.p2, clientX, clientY)) {
-                setDragTarget({ type: 'calib', point: 'p2' });
-                return;
+    // 1. Check for hits on EXISTING polygons (Completed ones)
+    // Even in Drawing mode, if I grab an old corner, I probably want to move it, not stack a new point on top.
+    for (let i = 0; i < polygons.length; i++) {
+        for (let j = 0; j < polygons[i].length; j++) {
+            if (isClose(polygons[i][j], clientX, clientY)) {
+                setDragTarget({ type: 'poly', polyIndex: i, pointIndex: j });
+                return; // Stop here! Do not add point.
             }
         }
-        // Check polygons (only if IDLE)
-        if (mode === 'IDLE') {
-            for (let i = 0; i < polygons.length; i++) {
-                for (let j = 0; j < polygons[i].length; j++) {
-                    if (isClose(polygons[i][j], clientX, clientY)) {
-                        setDragTarget({ type: 'poly', polyIndex: i, pointIndex: j });
-                        return;
-                    }
-                }
-            }
+    }
+
+    // Check for calibration line endpoints
+    if (calibrationLine) {
+        if (isClose(calibrationLine.p1, clientX, clientY)) {
+            setDragTarget({ type: 'calib', point: 'p1' });
+            return;
+        }
+        if (isClose(calibrationLine.p2, clientX, clientY)) {
+            setDragTarget({ type: 'calib', point: 'p2' });
+            return;
         }
     }
 
@@ -614,9 +609,21 @@ export default function App() {
           setShowCalibrationModal(true);
       } else {
         // If line exists and not drawing, allow moving handles (handled above)
-        // or starting drag logic if needed, but handled by dragTarget
       }
     } else if (mode === 'DRAWING') {
+      // 2. Check for hits on CURRENT polygon vertices (Active drawing)
+      if (currentPoly.length > 0) {
+          // Skipping index 0 if valid close target, otherwise check all
+          const startIndex = (currentPoly.length > 2) ? 1 : 0;
+          for (let i = startIndex; i < currentPoly.length; i++) {
+               if (isClose(currentPoly[i], clientX, clientY)) {
+                   setDragTarget({ type: 'current', pointIndex: i }); 
+                   return;
+               }
+          }
+      }
+
+      // 3. Close Logic (Existing)
       if (currentPoly.length > 2) {
         const start = currentPoly[0];
         const rect = canvasRef.current.getBoundingClientRect();
@@ -628,16 +635,17 @@ export default function App() {
             x: (p.x * rect.width * view.scale) + view.x,
             y: (p.y * rect.height * view.scale) + view.y
         };
-        const distPx = Math.sqrt(
-          Math.pow(screenCurrent.x - screenStart.x, 2) + 
-          Math.pow(screenCurrent.y - screenStart.y, 2)
-        );
+        const distPx = Math.sqrt(Math.pow(screenCurrent.x - screenStart.x, 2) + Math.pow(screenCurrent.y - screenStart.y, 2));
+        
         if (distPx < 20) {
+           // Close
            setPolygons([...polygons, currentPoly]);
            setCurrentPoly([]);
            return;
         }
       }
+      
+      // 4. Add Point (Default)
       setCurrentPoly([...currentPoly, p]);
     }
   };
@@ -660,6 +668,10 @@ export default function App() {
             const newPolys = [...polygons];
             newPolys[dragTarget.polyIndex][dragTarget.pointIndex] = p;
             setPolygons(newPolys);
+        } else if (dragTarget.type === 'current') {
+            const newPoly = [...currentPoly];
+            newPoly[dragTarget.pointIndex] = p;
+            setCurrentPoly(newPoly);
         }
         return;
     }
@@ -698,31 +710,9 @@ export default function App() {
         const p2 = { x: (calibrationLine.p2.x * rect.width * view.scale) + view.x, y: (calibrationLine.p2.y * rect.height * view.scale) + view.y };
         const distPx = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
         
-        // If we dragged significantly, assume "Drag-to-Draw" is done
-        if (distPx > 10 && isDrawingScale) {
-            // Check if mouse was released far from start point
-            // We need to differentiate drag-release vs click-release
-            // Simple heuristic: if we are in isDrawingScale, we wait for 2nd click UNLESS
-            // the user held down the mouse and dragged.
-            // For now, let's allow "Drag" to finish if distance is substantial on mouseUp
-            // But if it's a short distance, treat as click.
-            // Actually, simply checking distPx > 10 might conflict with click-move.
-            // Let's rely on explicit second click for clarity, OR check if mouse is down.
-            // A common pattern: MouseDown -> Move -> MouseUp.
-            // If the time between Down and Up is short, it's a click. If long/moved, it's a drag.
-            // Implementing simplified logic: if we moved > 20px during this specific interaction, finish.
-            // For now, let's support both:
-            // If user releases button and line is long, finish it.
-            // This supports drag.
-            // If user clicks (short line), keep isDrawingScale true.
-            // But wait, if they drag a long line, distPx > 10.
-            // So dragging works.
-            // Clicking once creates a 0-length line. Dragging creates length.
-            // So if distPx > 20, finish.
-            if (distPx > 30) {
-                setIsDrawingScale(false);
-                setShowCalibrationModal(true);
-            }
+        if (distPx > 30 && isDrawingScale) {
+            setIsDrawingScale(false);
+            setShowCalibrationModal(true);
         }
      }
   };
@@ -830,17 +820,15 @@ export default function App() {
       ctx.lineWidth = 2 / view.scale; 
       ctx.stroke();
 
-      // Draw editable handles if in IDLE mode
-      if (mode === 'IDLE') {
-          poly.forEach(p => {
-              const sp = toPixels(p);
-              ctx.beginPath();
-              ctx.arc(sp.x, sp.y, 6 / view.scale, 0, Math.PI * 2);
-              ctx.fillStyle = 'white';
-              ctx.fill();
-              ctx.stroke();
-          });
-      }
+      // Always draw editable handles for existing polys
+      poly.forEach(p => {
+          const sp = toPixels(p);
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, 6 / view.scale, 0, Math.PI * 2);
+          ctx.fillStyle = 'white';
+          ctx.fill();
+          ctx.stroke();
+      });
     });
 
     // Current Drawing
@@ -901,6 +889,7 @@ export default function App() {
            ctx.font = `bold ${14/view.scale}px sans-serif`;
            const text = `${distFeet.toFixed(1)} ft`;
            const tm = ctx.measureText(text);
+           // Background box for text
            ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
            const boxW = tm.width + (12/view.scale);
            const boxH = 24 / view.scale;
