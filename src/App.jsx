@@ -20,9 +20,9 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.9 (Favicon Polish)
- * - Update: Favicon redesigned to match user's "Sprout" logo perfectly.
- * - Previous Features: Mobile footer, Locked Zoom/Pan, One-page report.
+ * LAWN ESTLY - v3.9.9.1
+ * - Bug Fix: Aggressive Favicon replacement to override Vite default on mobile.
+ * - Bug Fix: Print Report CSS tuned with max-height to guarantee 1-page output.
  */
 
 // --- Helper Components ---
@@ -35,36 +35,34 @@ const FaviconManager = () => {
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
         <rect width="64" height="64" rx="16" fill="#d1fae5"/>
-        
-        <!-- Base Line -->
         <path d="M20 52H44" stroke="#065f46" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-        
-        <!-- Stem (Curving slightly right) -->
         <path d="M32 52Q32 35 40 18" stroke="#065f46" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-        
-        <!-- Left Leaf (Lower) -->
         <path d="M32 40 Q 15 40 15 28 Q 15 15 32 40" stroke="#065f46" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-        
-        <!-- Right Leaf (Upper) -->
         <path d="M38 26 Q 55 26 55 14 Q 55 5 38 26" stroke="#065f46" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `.replace(/\n/g, '').replace(/#/g, '%23');
 
-    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    const dataUrl = `data:image/svg+xml,${svg}`;
+
+    // Update or create standard icon
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+    }
     link.type = 'image/svg+xml';
-    link.rel = 'icon';
-    link.href = `data:image/svg+xml,${svg}`;
+    link.href = dataUrl;
     
-    // Attempt to set apple-touch-icon for mobile home screen add
+    // Update or create apple-touch-icon (Mobile Home Screen)
     let appleLink = document.querySelector("link[rel='apple-touch-icon']");
     if (!appleLink) {
         appleLink = document.createElement('link');
         appleLink.rel = 'apple-touch-icon';
         document.head.appendChild(appleLink);
     }
-    appleLink.href = `data:image/svg+xml,${svg}`;
+    appleLink.href = dataUrl;
 
-    document.getElementsByTagName('head')[0].appendChild(link);
     document.title = "LawnEstly";
   }, []);
   return null;
@@ -457,29 +455,24 @@ export default function App() {
             <head>
               <title>LawnEstly Report</title>
               <style>
-                body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; max-width: 1000px; margin: 0 auto; color: #1f2937; }
-                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; border-bottom: 3px solid #059669; padding-bottom: 20px; }
+                body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; color: #1f2937; }
+                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; border-bottom: 3px solid #059669; padding-bottom: 10px; }
                 .brand { font-size: 1.5rem; font-weight: 800; color: #111827; }
                 .brand span { color: #059669; }
-                .meta { text-align: right; color: #6b7280; font-size: 0.875rem; }
-                .price-tag { text-align: right; }
-                .price-label { text-transform: uppercase; font-size: 0.75rem; font-weight: 700; color: #059669; letter-spacing: 0.05em; }
-                .price-value { font-size: 3rem; font-weight: 800; color: #111827; line-height: 1; margin-top: 5px; }
-                
-                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
-                .stat-card { background: #f9fafb; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; }
-                .stat-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; margin-bottom: 8px; }
-                .stat-value { font-size: 1.25rem; font-weight: 700; color: #111827; }
-                .stat-sub { font-size: 0.75rem; color: #6b7280; margin-top: 4px; }
-                
-                .map-container { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-                img { width: 100%; display: block; }
-                
-                .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 0.75rem; }
-                
-                @media print {
-                    body { padding: 0; margin: 1.5cm; }
-                    .stat-card { border: 1px solid #d1d5db; }
+                .price-value { font-size: 2.5rem; font-weight: 800; color: #111827; line-height: 1; margin-top: 5px; }
+                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+                .stat-card { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; }
+                .stat-label { font-size: 0.6rem; text-transform: uppercase; font-weight: 700; color: #6b7280; margin-bottom: 4px; }
+                .stat-value { font-size: 1rem; font-weight: 700; color: #111827; }
+                .stat-sub { font-size: 0.6rem; color: #6b7280; margin-top: 2px; }
+                /* CONSTRICT IMAGE HEIGHT FOR 1-PAGE PRINT */
+                .map-container { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-height: 50vh; display: flex; justify-content: center; background: #f9fafb; }
+                img { max-width: 100%; max-height: 100%; object-fit: contain; }
+                .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 0.6rem; }
+                @media print { 
+                    body { padding: 0; margin: 0.5cm; } 
+                    .stat-card { border: 1px solid #d1d5db; } 
+                    .map-container { max-height: 45vh; }
                 }
               </style>
             </head>
@@ -487,10 +480,10 @@ export default function App() {
               <div class="header">
                 <div>
                   <div class="brand">Lawn<span>Estly</span></div>
-                  <div style="color: #6b7280; margin-top: 5px;">Professional Estimate Report</div>
+                  <div style="color: #6b7280; font-size: 0.8rem; margin-top: 2px;">Professional Estimate Report</div>
                 </div>
-                <div class="price-tag">
-                  <div class="price-label">Estimated Total</div>
+                <div style="text-align: right;">
+                  <div style="text-transform: uppercase; font-size: 0.6rem; font-weight: 700; color: #059669; letter-spacing: 0.05em;">Estimated Total</div>
                   <div class="price-value">$${estimatedBid.toFixed(2)}</div>
                 </div>
               </div>
@@ -518,7 +511,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div class="stat-label" style="margin-bottom: 10px;">Property Analysis</div>
+              <div style="font-size: 0.7rem; font-weight: 700; color: #6b7280; margin-bottom: 5px; text-transform: uppercase;">Property Analysis</div>
               <div class="map-container">
                  <img src="${dataUrl}" />
               </div>
@@ -1009,8 +1002,6 @@ export default function App() {
       const resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
               const { width, height } = entry.contentRect;
-              // Only update state if significantly changed to avoid loops
-              // Using state triggers a re-render which triggers the useEffect canvas drawing
               setCanvasResolution({ width, height });
               canvasRef.current.width = width;
               canvasRef.current.height = height;
@@ -1222,7 +1213,7 @@ export default function App() {
              
              {/* Version Footer - Moved out of the flex row to be below */}
              <div className="pb-2 text-[10px] text-gray-400 font-mono w-full text-center md:text-right md:pr-4">
-                LawnEstly version 3.9.9
+                LawnEstly version 3.9.9.1
              </div>
           </div>
           
