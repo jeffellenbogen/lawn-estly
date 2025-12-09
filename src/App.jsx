@@ -20,10 +20,12 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.4
- * - Smart Interaction: Prioritizes dragging existing points over creating new ones.
- * - Unified Editing: Works in both IDLE and DRAWING modes.
- * - Refined Vertex Logic: Prevents accidental point creation when refining shapes.
+ * LAWN ESTLY - v3.9.5
+ * - Scale Tool Refinement:
+ * 1. Added minimum length threshold (5% of view) to prevent accidental clicks.
+ * 2. Added instructional toast for the Scale tool.
+ * 3. Enforced "Drag" gesture for initial creation.
+ * - Prioritized editing of existing vertices (from v3.9.4).
  */
 
 // --- Helper Math Functions ---
@@ -710,6 +712,19 @@ export default function App() {
         const p2 = { x: (calibrationLine.p2.x * rect.width * view.scale) + view.x, y: (calibrationLine.p2.y * rect.height * view.scale) + view.y };
         const distPx = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
         
+        // Enforce Minimum Scale Line Length (5% of viewport min dimension)
+        const minLength = Math.min(rect.width, rect.height) * 0.05;
+
+        // If dragging new line and it's too short, cancel it
+        if (isDrawingScale && distPx < minLength) {
+             setCalibrationLine(null);
+             setIsDrawingScale(false);
+             return;
+        }
+
+        // If we dragged significantly, assume "Drag-to-Draw" is done
+        // If clicking (short time/dist), logic handles via isDrawingScale waiting for 2nd click
+        // But here we check length. If user drags a long line and releases, we should finish.
         if (distPx > 30 && isDrawingScale) {
             setIsDrawingScale(false);
             setShowCalibrationModal(true);
@@ -962,6 +977,13 @@ export default function App() {
         onConfirm={confirmCalibration} 
         initialValue={calibrationValue}
       />
+
+      {/* Instructional Scale Toast */}
+      {mode === 'CALIBRATING' && !calibrationLine && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 bg-emerald-800/90 text-white px-4 py-2 rounded-full shadow-lg text-xs font-semibold animate-in slide-in-from-top-4 fade-in pointer-events-none whitespace-nowrap">
+          Drag a line between two measurable endpoints to set the scale.
+        </div>
+      )}
 
       {/* Floating Estimate Button (Mobile Only) */}
       {polygons.length > 0 && !sidebarOpen && (
