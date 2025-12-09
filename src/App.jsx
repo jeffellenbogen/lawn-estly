@@ -20,10 +20,9 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.8
- * - Update: Version Footer moved below toolbar on mobile to prevent overlap.
- * - Update: Zoom/Pan restricted strictly to "Move" mode.
- * - Update: Report CSS tuned to fit strictly on one page (reduced margins/image size).
+ * LAWN ESTLY - v3.9.8 (Favicon Update)
+ * - Update: Favicon matched to website "Sprout" branding.
+ * - Previous Features: Mobile footer, Locked Zoom/Pan, One-page report.
  */
 
 // --- Helper Components ---
@@ -31,12 +30,13 @@ import {
 // Dynamically sets the favicon
 const FaviconManager = () => {
   useEffect(() => {
-    // Simplified Sprout Icon for better visibility as favicon/app icon
+    // Clean Sprout Icon for Favicon (Emerald Green on Light Background)
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
         <rect width="64" height="64" rx="16" fill="#ecfdf5"/>
-        <path d="M32 54V28M32 28C32 28 22 24 18 34M32 28C32 28 44 20 50 30" stroke="#059669" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M32 10C24 10 18 18 18 28H46C46 18 40 10 32 10Z" fill="#10b981"/>
+        <path d="M32 52V24" stroke="#059669" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M32 40C20 40 12 32 12 20" stroke="#059669" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M32 40C44 40 52 32 52 20" stroke="#059669" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `.replace(/\n/g, '').replace(/#/g, '%23');
 
