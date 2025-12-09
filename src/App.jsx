@@ -20,9 +20,10 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.7
- * - Update: Version Footer now visible on mobile.
- * - Update: Favicon simplified to Sprout only for better visibility.
+ * LAWN ESTLY - v3.9.8
+ * - Update: Version Footer moved below toolbar on mobile to prevent overlap.
+ * - Update: Zoom/Pan restricted strictly to "Move" mode.
+ * - Update: Report CSS tuned to fit strictly on one page (reduced margins/image size).
  */
 
 // --- Helper Components ---
@@ -446,29 +447,22 @@ export default function App() {
             <head>
               <title>LawnEstly Report</title>
               <style>
-                body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; max-width: 1000px; margin: 0 auto; color: #1f2937; }
-                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; border-bottom: 3px solid #059669; padding-bottom: 20px; }
+                body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; color: #1f2937; }
+                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; border-bottom: 3px solid #059669; padding-bottom: 10px; }
                 .brand { font-size: 1.5rem; font-weight: 800; color: #111827; }
                 .brand span { color: #059669; }
-                .meta { text-align: right; color: #6b7280; font-size: 0.875rem; }
-                .price-tag { text-align: right; }
-                .price-label { text-transform: uppercase; font-size: 0.75rem; font-weight: 700; color: #059669; letter-spacing: 0.05em; }
-                .price-value { font-size: 3rem; font-weight: 800; color: #111827; line-height: 1; margin-top: 5px; }
-                
-                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
-                .stat-card { background: #f9fafb; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; }
-                .stat-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; margin-bottom: 8px; }
-                .stat-value { font-size: 1.25rem; font-weight: 700; color: #111827; }
-                .stat-sub { font-size: 0.75rem; color: #6b7280; margin-top: 4px; }
-                
-                .map-container { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-                img { width: 100%; display: block; }
-                
-                .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 0.75rem; }
-                
-                @media print {
-                    body { padding: 0; margin: 1.5cm; }
-                    .stat-card { border: 1px solid #d1d5db; }
+                .price-value { font-size: 2.5rem; font-weight: 800; color: #111827; line-height: 1; margin-top: 5px; }
+                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+                .stat-card { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; }
+                .stat-label { font-size: 0.6rem; text-transform: uppercase; font-weight: 700; color: #6b7280; margin-bottom: 4px; }
+                .stat-value { font-size: 1rem; font-weight: 700; color: #111827; }
+                .stat-sub { font-size: 0.6rem; color: #6b7280; margin-top: 2px; }
+                .map-container { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-height: 60vh; display: flex; justify-content: center; }
+                img { max-width: 100%; max-height: 100%; object-fit: contain; }
+                .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 0.6rem; }
+                @media print { 
+                    body { padding: 0; margin: 0.5cm; } 
+                    .stat-card { border: 1px solid #d1d5db; } 
                 }
               </style>
             </head>
@@ -476,10 +470,10 @@ export default function App() {
               <div class="header">
                 <div>
                   <div class="brand">Lawn<span>Estly</span></div>
-                  <div style="color: #6b7280; margin-top: 5px;">Professional Estimate Report</div>
+                  <div style="color: #6b7280; font-size: 0.8rem; margin-top: 2px;">Professional Estimate Report</div>
                 </div>
-                <div class="price-tag">
-                  <div class="price-label">Estimated Total</div>
+                <div style="text-align: right;">
+                  <div style="text-transform: uppercase; font-size: 0.6rem; font-weight: 700; color: #059669; letter-spacing: 0.05em;">Estimated Total</div>
                   <div class="price-value">$${estimatedBid.toFixed(2)}</div>
                 </div>
               </div>
@@ -507,7 +501,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div class="stat-label" style="margin-bottom: 10px;">Property Analysis</div>
+              <div style="font-size: 0.7rem; font-weight: 700; color: #6b7280; margin-bottom: 5px; text-transform: uppercase;">Property Analysis</div>
               <div class="map-container">
                  <img src="${dataUrl}" />
               </div>
@@ -791,6 +785,10 @@ export default function App() {
 
   const handleWheel = (e) => {
       if (!image) return;
+      
+      // Ensure Zoom is ONLY allowed in PAN mode
+      if (mode !== 'PAN') return;
+
       const zoomIntensity = 0.001;
       const delta = -e.deltaY * zoomIntensity;
       const newScale = Math.min(Math.max(1, view.scale + delta), 5);
@@ -810,7 +808,7 @@ export default function App() {
   const handleMouseUp = (e) => endInteraction(e.clientX, e.clientY);
 
   const handleTouchStart = (e) => { 
-      if(e.touches.length === 2) {
+      if(e.touches.length === 2 && mode === 'PAN') {
           const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
           setTouchDist(dist);
       } else if(e.touches.length === 1) {
@@ -818,7 +816,7 @@ export default function App() {
       }
   };
   const handleTouchMove = (e) => { 
-      if(e.touches.length === 2 && touchDist) {
+      if(e.touches.length === 2 && touchDist && mode === 'PAN') {
           const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
           const delta = newDist - touchDist;
           const zoomSpeed = 0.005;
@@ -1130,82 +1128,84 @@ export default function App() {
           </div>
           
           {/* Bottom Toolbar Section */}
-          <div className="shrink-0 p-3 md:p-4 z-30 flex justify-center items-center bg-white/80 backdrop-blur-md border-t border-gray-200 relative">
-             {/* Version Footer */}
-             <div className="absolute right-4 bottom-2 text-[10px] text-gray-400 font-mono">
-                LawnEstly version 3.9.7
+          <div className="shrink-0 z-30 flex flex-col items-center bg-white/80 backdrop-blur-md border-t border-gray-200 relative">
+             <div className="p-3 md:p-4 w-full flex justify-center">
+                 <div className="flex items-center gap-1 md:gap-2 p-1.5 md:p-2 bg-white rounded-2xl shadow-sm border border-gray-200 w-full md:w-auto justify-between md:justify-start">
+                  
+                  <Tooltip text="Upload Image">
+                    <button 
+                      onClick={() => fileInputRef.current.click()}
+                      className="p-2 md:p-3 rounded-xl hover:bg-gray-100 text-gray-600 flex flex-col items-center gap-1 transition-all group relative overflow-hidden flex-1 md:flex-none"
+                    >
+                       <Upload className="h-5 w-5" />
+                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                    </button>
+                  </Tooltip>
+                  
+                  <div className="w-px h-8 bg-gray-200 mx-1"></div>
+
+                  <Tooltip text="Move / Pan">
+                    <button 
+                      onClick={() => setMode('PAN')}
+                      disabled={!image}
+                      className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
+                          mode === 'PAN' 
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
+                          : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
+                      }`}
+                    >
+                       <Move className="h-5 w-5" />
+                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Move</span>
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip text="Set Scale">
+                    <button 
+                      onClick={() => {
+                           setMode(mode === 'CALIBRATING' ? 'IDLE' : 'CALIBRATING');
+                           setCalibrationLine(null); // Reset calibration line on click
+                           setScaleFactor(null); // Clear scale factor
+                           setIsDrawingScale(false); // Reset drawing state
+                      }}
+                      disabled={!image}
+                      className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
+                          mode === 'CALIBRATING' 
+                          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-105' 
+                          : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-emerald-50 text-gray-600 hover:text-emerald-700'
+                      }`}
+                    >
+                       <Ruler className="h-5 w-5" />
+                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Scale</span>
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip text="Draw Lawn">
+                    <button 
+                      onClick={() => {
+                           if (!scaleFactor) {
+                               alert("Please set the Scale (Ruler) first!");
+                               setMode('CALIBRATING');
+                               return;
+                           }
+                           setMode(mode === 'DRAWING' ? 'IDLE' : 'DRAWING');
+                      }}
+                      disabled={!image}
+                      className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
+                          mode === 'DRAWING' 
+                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105' 
+                          : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-amber-50 text-gray-600 hover:text-amber-700'
+                      }`}
+                    >
+                       <PenTool className="h-5 w-5" />
+                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Draw</span>
+                    </button>
+                  </Tooltip>
+                 </div>
              </div>
-
-             <div className="flex items-center gap-1 md:gap-2 p-1.5 md:p-2 bg-white rounded-2xl shadow-sm border border-gray-200 w-full md:w-auto justify-between md:justify-start">
-              
-              <Tooltip text="Upload Image">
-                <button 
-                  onClick={() => fileInputRef.current.click()}
-                  className="p-2 md:p-3 rounded-xl hover:bg-gray-100 text-gray-600 flex flex-col items-center gap-1 transition-all group relative overflow-hidden flex-1 md:flex-none"
-                >
-                   <Upload className="h-5 w-5" />
-                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Upload</span>
-                </button>
-              </Tooltip>
-              
-              <div className="w-px h-8 bg-gray-200 mx-1"></div>
-
-              <Tooltip text="Move / Pan">
-                <button 
-                  onClick={() => setMode('PAN')}
-                  disabled={!image}
-                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
-                      mode === 'PAN' 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
-                  }`}
-                >
-                   <Move className="h-5 w-5" />
-                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Move</span>
-                </button>
-              </Tooltip>
-
-              <Tooltip text="Set Scale">
-                <button 
-                  onClick={() => {
-                       setMode(mode === 'CALIBRATING' ? 'IDLE' : 'CALIBRATING');
-                       setCalibrationLine(null); // Reset calibration line on click
-                       setScaleFactor(null); // Clear scale factor
-                       setIsDrawingScale(false); // Reset drawing state
-                  }}
-                  disabled={!image}
-                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
-                      mode === 'CALIBRATING' 
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-105' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-emerald-50 text-gray-600 hover:text-emerald-700'
-                  }`}
-                >
-                   <Ruler className="h-5 w-5" />
-                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Scale</span>
-                </button>
-              </Tooltip>
-
-              <Tooltip text="Draw Lawn">
-                <button 
-                  onClick={() => {
-                       if (!scaleFactor) {
-                           alert("Please set the Scale (Ruler) first!");
-                           setMode('CALIBRATING');
-                           return;
-                       }
-                       setMode(mode === 'DRAWING' ? 'IDLE' : 'DRAWING');
-                  }}
-                  disabled={!image}
-                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
-                      mode === 'DRAWING' 
-                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-amber-50 text-gray-600 hover:text-amber-700'
-                  }`}
-                >
-                   <PenTool className="h-5 w-5" />
-                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Draw</span>
-                </button>
-              </Tooltip>
+             
+             {/* Version Footer - Moved out of the flex row to be below */}
+             <div className="pb-2 text-[10px] text-gray-400 font-mono w-full text-center md:text-right md:pr-4">
+                LawnEstly version 3.9.8
              </div>
           </div>
           
