@@ -20,11 +20,11 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.8
- * - Mobile Optimization:
- * - Sidebar defaults to CLOSED on mobile (screen width < 768px).
- * - Added "View Estimate" floating button on mobile to switch views easily.
- * - Adjusted toolbar sizing for smaller screens.
+ * LAWN ESTLY - v3.9
+ * - Mobile Fixes:
+ * 1. Toolbar Visibility: Used 'dvh' units to prevent toolbar being hidden by mobile browser bars.
+ * 2. Pinch-to-Zoom: Added multi-touch gesture support.
+ * 3. Scale Tool: Improved drag visualization (red line) and touch responsiveness.
  */
 
 // --- Helper Math Functions ---
@@ -343,13 +343,14 @@ export default function App() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   
-  // Canvas Resolution State (Fix for disappearing images)
+  // Canvas Resolution State
   const [canvasResolution, setCanvasResolution] = useState({ width: 800, height: 600 });
 
   // Zoom & Pan State
   const [view, setView] = useState({ x: 0, y: 0, scale: 1 });
   const [isPanning, setIsPanning] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState({ x: 0, y: 0 });
+  const [touchDist, setTouchDist] = useState(null); // For pinch zoom
   
   // Modal State
   const [showCalibrationModal, setShowCalibrationModal] = useState(false);
@@ -634,30 +635,18 @@ export default function App() {
 
   const handleWheel = (e) => {
       if (!image) return;
-      // e.preventDefault(); // Let browser handle page scroll if needed, but here we likely want zoom
-      // Note: React synthetic event might need preventing default in a ref handler if strict
       
       const zoomIntensity = 0.001;
       const delta = -e.deltaY * zoomIntensity;
       const newScale = Math.min(Math.max(1, view.scale + delta), 5); // Clamp 1x to 5x
       
-      // Simple center-zoom logic for stability
-      // To do point-zoom requires more complex offset math, sticking to simple scale update + pan tool
-      // or we can adjust x/y to zoom towards center
-      
-      // Calculate ratios to zoom towards center of current view
-      // Center of container
       const rect = canvasRef.current.getBoundingClientRect();
       const cx = rect.width / 2;
       const cy = rect.height / 2;
       
-      // Calculate point under center before zoom (normalized)
-      // (cx - oldX) / oldScale = unscaledX
       const unscaledX = (cx - view.x) / view.scale;
       const unscaledY = (cy - view.y) / view.scale;
       
-      // Calculate new XY to keep that point at center
-      // newX = cx - (unscaledX * newScale)
       const newX = cx - (unscaledX * newScale);
       const newY = cy - (unscaledY * newScale);
 
@@ -670,20 +659,51 @@ export default function App() {
   const handleMouseUp = (e) => endInteraction(e.clientX, e.clientY);
 
   const handleTouchStart = (e) => { 
-      if(e.touches.length === 1) {
-        // e.preventDefault(); // Allow scrolling if needed, or block for drawing?
+      if(e.touches.length === 2) {
+          // Start pinch zoom
+          const dist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+          );
+          setTouchDist(dist);
+      } else if(e.touches.length === 1) {
         startInteraction(e.touches[0].clientX, e.touches[0].clientY); 
       }
   };
   const handleTouchMove = (e) => { 
-      if(e.touches.length === 1) {
-        // e.preventDefault(); 
+      if(e.touches.length === 2 && touchDist) {
+          // Pinch zoom logic
+          const newDist = Math.hypot(
+              e.touches[0].clientX - e.touches[1].clientX,
+              e.touches[0].clientY - e.touches[1].clientY
+          );
+          
+          const delta = newDist - touchDist;
+          const zoomSpeed = 0.005;
+          const newScale = Math.min(Math.max(1, view.scale + (delta * zoomSpeed)), 5);
+          
+          // Center zoom logic for pinch
+          const rect = canvasRef.current.getBoundingClientRect();
+          const cx = rect.width / 2;
+          const cy = rect.height / 2;
+          
+          const unscaledX = (cx - view.x) / view.scale;
+          const unscaledY = (cy - view.y) / view.scale;
+          
+          const newX = cx - (unscaledX * newScale);
+          const newY = cy - (unscaledY * newScale);
+
+          setView({ x: newX, y: newY, scale: newScale });
+          setTouchDist(newDist);
+      } else if(e.touches.length === 1) {
         moveInteraction(e.touches[0].clientX, e.touches[0].clientY); 
       }
   };
   const handleTouchEnd = (e) => { 
-      // e.preventDefault(); 
-      endInteraction(e.changedTouches[0].clientX, e.changedTouches[0].clientY); 
+      if (e.touches.length < 2) setTouchDist(null);
+      if (e.changedTouches.length > 0 && e.touches.length === 0) {
+          endInteraction(e.changedTouches[0].clientX, e.changedTouches[0].clientY); 
+      }
   };
 
   // --- Modal Logic ---
@@ -869,7 +889,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-full flex flex-col bg-gray-100 overflow-hidden font-sans selection:bg-emerald-200 selection:text-emerald-900">
+    <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden font-sans selection:bg-emerald-200 selection:text-emerald-900">
       <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
       
       <CalibrationModal 
