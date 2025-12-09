@@ -20,9 +20,11 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.7
- * - Moved Toolbar: Anchored to bottom of screen (no longer floating over map)
- * - Maintained all v3.6 features (Zoom/Pan, Service Fee, etc.)
+ * LAWN ESTLY - v3.8
+ * - Mobile Optimization:
+ * - Sidebar defaults to CLOSED on mobile (screen width < 768px).
+ * - Added "View Estimate" floating button on mobile to switch views easily.
+ * - Adjusted toolbar sizing for smaller screens.
  */
 
 // --- Helper Math Functions ---
@@ -74,7 +76,7 @@ const Tooltip = ({ text, children }) => (
   </div>
 );
 
-const Header = ({ onToggleSidebar }) => (
+const Header = ({ onToggleSidebar, sidebarOpen }) => (
   <header className="bg-white/90 backdrop-blur-md border-b border-emerald-100 text-emerald-950 p-4 shadow-sm flex justify-between items-center z-50 relative shrink-0 print:hidden">
     <div className="flex items-center space-x-3">
       <div className="bg-emerald-100 p-2 rounded-lg flex items-center justify-center relative">
@@ -83,8 +85,13 @@ const Header = ({ onToggleSidebar }) => (
       </div>
       <h1 className="text-xl font-bold tracking-tight font-sans">Lawn<span className="text-emerald-600">Estly</span></h1>
     </div>
-    <button onClick={onToggleSidebar} className="md:hidden p-2 hover:bg-emerald-50 text-emerald-800 rounded-full transition-colors">
-      <Menu className="h-6 w-6" />
+    
+    <button 
+      onClick={onToggleSidebar} 
+      className={`md:hidden p-2 rounded-full transition-colors flex items-center gap-2 ${sidebarOpen ? 'bg-gray-100 text-gray-600' : 'bg-emerald-50 text-emerald-700'}`}
+    >
+      <span className="text-sm font-semibold">{sidebarOpen ? 'Close' : 'Estimate'}</span>
+      {sidebarOpen ? <X className="h-5 w-5" /> : <Calculator className="h-5 w-5" />}
     </button>
   </header>
 );
@@ -317,7 +324,8 @@ const Sidebar = ({
 // --- Main Application Component ---
 
 export default function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Initialize Sidebar state based on screen width (Closed on mobile by default)
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [image, setImage] = useState(null);
   const [mode, setMode] = useState('IDLE'); 
   const [rates, setRates] = useState({ 
@@ -862,13 +870,23 @@ export default function App() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-100 overflow-hidden font-sans selection:bg-emerald-200 selection:text-emerald-900">
-      <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
       
       <CalibrationModal 
         isOpen={showCalibrationModal} 
         onClose={cancelCalibration} 
         onConfirm={confirmCalibration} 
       />
+
+      {/* Floating Estimate Button (Mobile Only) - Appears after data exists */}
+      {polygons.length > 0 && !sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed bottom-24 right-4 md:hidden z-50 bg-emerald-600 text-white shadow-lg rounded-full px-5 py-3 font-bold flex items-center gap-2 animate-in slide-in-from-right-10"
+        >
+          View Estimate <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
 
       <div className="flex-1 relative flex overflow-hidden">
         
@@ -944,16 +962,16 @@ export default function App() {
           </div>
           
           {/* Bottom Toolbar Section */}
-          <div className="shrink-0 p-4 z-30 flex justify-center items-center bg-white/80 backdrop-blur-md border-t border-gray-200">
-             <div className="flex items-center gap-2 p-2 bg-white rounded-2xl shadow-sm border border-gray-200">
+          <div className="shrink-0 p-3 md:p-4 z-30 flex justify-center items-center bg-white/80 backdrop-blur-md border-t border-gray-200">
+             <div className="flex items-center gap-1 md:gap-2 p-1.5 md:p-2 bg-white rounded-2xl shadow-sm border border-gray-200 w-full md:w-auto justify-between md:justify-start">
               
               <Tooltip text="Upload Image">
                 <button 
                   onClick={() => fileInputRef.current.click()}
-                  className="p-3 rounded-xl hover:bg-gray-100 text-gray-600 flex flex-col items-center gap-1 transition-all group relative overflow-hidden"
+                  className="p-2 md:p-3 rounded-xl hover:bg-gray-100 text-gray-600 flex flex-col items-center gap-1 transition-all group relative overflow-hidden flex-1 md:flex-none"
                 >
                    <Upload className="h-5 w-5" />
-                   <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Upload</span>
                 </button>
               </Tooltip>
               
@@ -963,14 +981,14 @@ export default function App() {
                 <button 
                   onClick={() => setMode('PAN')}
                   disabled={!image}
-                  className={`p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
+                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
                       mode === 'PAN' 
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
                       : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
                   }`}
                 >
                    <Move className="h-5 w-5" />
-                   <span className="text-[10px] font-bold uppercase tracking-wider">Move</span>
+                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Move</span>
                 </button>
               </Tooltip>
 
@@ -981,14 +999,14 @@ export default function App() {
                        setCurrentPoly([]);
                   }}
                   disabled={!image}
-                  className={`p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
+                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
                       mode === 'CALIBRATING' 
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-105' 
                       : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-emerald-50 text-gray-600 hover:text-emerald-700'
                   }`}
                 >
                    <Ruler className="h-5 w-5" />
-                   <span className="text-[10px] font-bold uppercase tracking-wider">Scale</span>
+                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Scale</span>
                 </button>
               </Tooltip>
 
@@ -1003,14 +1021,14 @@ export default function App() {
                        setMode(mode === 'DRAWING' ? 'IDLE' : 'DRAWING');
                   }}
                   disabled={!image}
-                  className={`p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
+                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
                       mode === 'DRAWING' 
                       ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105' 
                       : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-amber-50 text-gray-600 hover:text-amber-700'
                   }`}
                 >
                    <PenTool className="h-5 w-5" />
-                   <span className="text-[10px] font-bold uppercase tracking-wider">Draw</span>
+                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Draw</span>
                 </button>
               </Tooltip>
              </div>
