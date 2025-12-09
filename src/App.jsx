@@ -20,10 +20,12 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.2 (Fix Truncation)
- * - Fixed syntax error where code was cut off in previous version.
- * - Restored full functionality for Drag-to-Edit (Scale & Vertices).
- * - Verified Pricing & Mobile logic.
+ * LAWN ESTLY - v3.9.3
+ * - Improved Scale Tool:
+ * 1. Tap measurement text to edit value.
+ * 2. Support for Click-Move-Click drawing on desktop.
+ * 3. Reset Scale button allows redrawing.
+ * 4. Persistent drag handles for adjustment.
  */
 
 // --- Helper Math Functions ---
@@ -347,6 +349,7 @@ export default function App() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [dragTarget, setDragTarget] = useState(null); // { type: 'poly'|'calib', index, pointIndex, p1/p2 }
+  const [isDrawingScale, setIsDrawingScale] = useState(false); // For click-move-click logic
   
   // Canvas Resolution State (Fix for disappearing images)
   const [canvasResolution, setCanvasResolution] = useState({ width: 800, height: 600 });
@@ -494,6 +497,7 @@ export default function App() {
             setCalibrationLine(null);
             setScaleFactor(null);
             setMode('IDLE');
+            setIsDrawingScale(false);
             setShowCalibrationModal(false);
             setView({ x: 0, y: 0, scale: 1 });
         };
@@ -532,9 +536,39 @@ export default function App() {
       return dist < 20; // 20px hit radius
   };
 
+  // Check if click hits the scale label
+  const isOverScaleLabel = (clientX, clientY) => {
+      if (!calibrationLine || !scaleFactor || !canvasRef.current) return false;
+      const rect = canvasRef.current.getBoundingClientRect();
+      
+      const p1 = { x: (calibrationLine.p1.x * rect.width * view.scale) + view.x, y: (calibrationLine.p1.y * rect.height * view.scale) + view.y };
+      const p2 = { x: (calibrationLine.p2.x * rect.width * view.scale) + view.x, y: (calibrationLine.p2.y * rect.height * view.scale) + view.y };
+      const mid = { x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2 };
+      
+      // Box size approx based on render logic
+      const boxW = 60; // Approx width
+      const boxH = 30; // Approx height
+      
+      const rawX = clientX - rect.left;
+      const rawY = clientY - rect.top;
+      
+      return (
+          rawX >= mid.x - boxW/2 && 
+          rawX <= mid.x + boxW/2 && 
+          rawY >= mid.y - boxH/2 - 10 && 
+          rawY <= mid.y + boxH/2
+      );
+  };
+
   const startInteraction = (clientX, clientY) => {
     if (!image) return;
     
+    // Check for Text Label Tap (Mobile/Desktop)
+    if (isOverScaleLabel(clientX, clientY)) {
+        setShowCalibrationModal(true);
+        return;
+    }
+
     // Check for IDLE mode dragging first (vertices or calibration endpoints)
     if (mode === 'IDLE' || mode === 'CALIBRATING') {
         // Check calibration line
@@ -570,12 +604,17 @@ export default function App() {
     const p = getNormalizedPoint(clientX, clientY);
 
     if (mode === 'CALIBRATING') {
-      // If we clicked but didn't hit a handle, start a new line
+      // If user clicked the button to reset, allow new line
       if (!calibrationLine) {
         setCalibrationLine({ p1: p, p2: p });
+        setIsDrawingScale(true); // Start "Click-Move-Click" state
+      } else if (isDrawingScale) {
+          // This is the second click of "Click-Move-Click"
+          setIsDrawingScale(false);
+          setShowCalibrationModal(true);
       } else {
-        // If line exists and we didn't hit handle, open modal
-        setShowCalibrationModal(true);
+        // If line exists and not drawing, allow moving handles (handled above)
+        // or starting drag logic if needed, but handled by dragTarget
       }
     } else if (mode === 'DRAWING') {
       if (currentPoly.length > 2) {
@@ -636,15 +675,9 @@ export default function App() {
     const p = getNormalizedPoint(clientX, clientY);
     setMousePos(p);
 
-    // Initial Drawing of Calibration Line
-    if (mode === 'CALIBRATING' && calibrationLine && !showCalibrationModal && !dragTarget) {
-        // Only if p1==p2 (fresh line being dragged)
-        if(calibrationLine.p1.x === calibrationLine.p2.x && calibrationLine.p1.y === calibrationLine.p2.y) {
-             setCalibrationLine({ ...calibrationLine, p2: p });
-        } else {
-             // We are dragging the second point of a fresh line
-             setCalibrationLine({ ...calibrationLine, p2: p });
-        }
+    // Initial Drawing of Calibration Line (Click-Move-Click logic)
+    if (mode === 'CALIBRATING' && isDrawingScale && calibrationLine) {
+         setCalibrationLine({ ...calibrationLine, p2: p });
     }
   };
 
@@ -665,9 +698,31 @@ export default function App() {
         const p2 = { x: (calibrationLine.p2.x * rect.width * view.scale) + view.x, y: (calibrationLine.p2.y * rect.height * view.scale) + view.y };
         const distPx = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
         
-        // If we just finished dragging a new line
-        if (distPx > 10) {
-            setShowCalibrationModal(true);
+        // If we dragged significantly, assume "Drag-to-Draw" is done
+        if (distPx > 10 && isDrawingScale) {
+            // Check if mouse was released far from start point
+            // We need to differentiate drag-release vs click-release
+            // Simple heuristic: if we are in isDrawingScale, we wait for 2nd click UNLESS
+            // the user held down the mouse and dragged.
+            // For now, let's allow "Drag" to finish if distance is substantial on mouseUp
+            // But if it's a short distance, treat as click.
+            // Actually, simply checking distPx > 10 might conflict with click-move.
+            // Let's rely on explicit second click for clarity, OR check if mouse is down.
+            // A common pattern: MouseDown -> Move -> MouseUp.
+            // If the time between Down and Up is short, it's a click. If long/moved, it's a drag.
+            // Implementing simplified logic: if we moved > 20px during this specific interaction, finish.
+            // For now, let's support both:
+            // If user releases button and line is long, finish it.
+            // This supports drag.
+            // If user clicks (short line), keep isDrawingScale true.
+            // But wait, if they drag a long line, distPx > 10.
+            // So dragging works.
+            // Clicking once creates a 0-length line. Dragging creates length.
+            // So if distPx > 20, finish.
+            if (distPx > 30) {
+                setIsDrawingScale(false);
+                setShowCalibrationModal(true);
+            }
         }
      }
   };
@@ -1036,7 +1091,9 @@ export default function App() {
                 <button 
                   onClick={() => {
                        setMode(mode === 'CALIBRATING' ? 'IDLE' : 'CALIBRATING');
-                       setCurrentPoly([]);
+                       setCalibrationLine(null); // Reset calibration line on click
+                       setScaleFactor(null); // Clear scale factor
+                       setIsDrawingScale(false); // Reset drawing state
                   }}
                   disabled={!image}
                   className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
