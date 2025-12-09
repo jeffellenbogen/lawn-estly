@@ -20,13 +20,9 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.6
- * - Complete Feature Set:
- * 1. Service Fee ($25 default)
- * 2. Zoom & Pan (Mouse wheel + Move tool)
- * 3. Canvas Resolution Fix (Prevents blank images)
- * 4. Pop-up Report Generation
- * 5. Feet-based units
+ * LAWN ESTLY - v3.7
+ * - Moved Toolbar: Anchored to bottom of screen (no longer floating over map)
+ * - Maintained all v3.6 features (Zoom/Pan, Service Fee, etc.)
  */
 
 // --- Helper Math Functions ---
@@ -879,77 +875,6 @@ export default function App() {
         {/* Main Workspace */}
         <main className={`flex-1 relative flex flex-col bg-gray-200/50 transition-all duration-300 ease-in-out ${sidebarOpen ? 'md:mr-96' : ''}`}>
           
-          {/* Floating Action Dock (Bottom Center) */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-2 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-white/50 ring-1 ring-black/5 transition-all duration-300 hover:scale-[1.02]">
-              
-              <Tooltip text="Upload Image">
-                <button 
-                  onClick={() => fileInputRef.current.click()}
-                  className="p-4 rounded-xl hover:bg-gray-100 text-gray-600 flex flex-col items-center gap-1 transition-all group relative overflow-hidden"
-                >
-                   <Upload className="h-6 w-6" />
-                   <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
-                </button>
-              </Tooltip>
-              
-              <div className="w-px h-10 bg-gray-200 mx-1"></div>
-
-              <Tooltip text="Move / Pan">
-                <button 
-                  onClick={() => setMode('PAN')}
-                  disabled={!image}
-                  className={`p-4 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
-                      mode === 'PAN' 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-110' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
-                  }`}
-                >
-                   <Move className="h-6 w-6" />
-                   <span className="text-[10px] font-bold uppercase tracking-wider">Move</span>
-                </button>
-              </Tooltip>
-
-              <Tooltip text="Set Scale">
-                <button 
-                  onClick={() => {
-                       setMode(mode === 'CALIBRATING' ? 'IDLE' : 'CALIBRATING');
-                       setCurrentPoly([]);
-                  }}
-                  disabled={!image}
-                  className={`p-4 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
-                      mode === 'CALIBRATING' 
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-110' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-emerald-50 text-gray-600 hover:text-emerald-700'
-                  }`}
-                >
-                   <Ruler className="h-6 w-6" />
-                   <span className="text-[10px] font-bold uppercase tracking-wider">Scale</span>
-                </button>
-              </Tooltip>
-
-              <Tooltip text="Draw Lawn">
-                <button 
-                  onClick={() => {
-                       if (!scaleFactor) {
-                           alert("Please set the Scale (Ruler) first!");
-                           setMode('CALIBRATING');
-                           return;
-                       }
-                       setMode(mode === 'DRAWING' ? 'IDLE' : 'DRAWING');
-                  }}
-                  disabled={!image}
-                  className={`p-4 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
-                      mode === 'DRAWING' 
-                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-110' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-amber-50 text-gray-600 hover:text-amber-700'
-                  }`}
-                >
-                   <PenTool className="h-6 w-6" />
-                   <span className="text-[10px] font-bold uppercase tracking-wider">Draw</span>
-                </button>
-              </Tooltip>
-          </div>
-
           <div ref={containerRef} className="flex-1 overflow-hidden relative flex items-center justify-center p-4">
              {!image ? (
                  <div className="text-center space-y-6 max-w-md p-10 bg-white rounded-3xl shadow-xl border border-gray-100">
@@ -1016,6 +941,79 @@ export default function App() {
                      })}
                 </div>
              )}
+          </div>
+          
+          {/* Bottom Toolbar Section */}
+          <div className="shrink-0 p-4 z-30 flex justify-center items-center bg-white/80 backdrop-blur-md border-t border-gray-200">
+             <div className="flex items-center gap-2 p-2 bg-white rounded-2xl shadow-sm border border-gray-200">
+              
+              <Tooltip text="Upload Image">
+                <button 
+                  onClick={() => fileInputRef.current.click()}
+                  className="p-3 rounded-xl hover:bg-gray-100 text-gray-600 flex flex-col items-center gap-1 transition-all group relative overflow-hidden"
+                >
+                   <Upload className="h-5 w-5" />
+                   <span className="text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                </button>
+              </Tooltip>
+              
+              <div className="w-px h-8 bg-gray-200 mx-1"></div>
+
+              <Tooltip text="Move / Pan">
+                <button 
+                  onClick={() => setMode('PAN')}
+                  disabled={!image}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
+                      mode === 'PAN' 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
+                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
+                  }`}
+                >
+                   <Move className="h-5 w-5" />
+                   <span className="text-[10px] font-bold uppercase tracking-wider">Move</span>
+                </button>
+              </Tooltip>
+
+              <Tooltip text="Set Scale">
+                <button 
+                  onClick={() => {
+                       setMode(mode === 'CALIBRATING' ? 'IDLE' : 'CALIBRATING');
+                       setCurrentPoly([]);
+                  }}
+                  disabled={!image}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
+                      mode === 'CALIBRATING' 
+                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-105' 
+                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-emerald-50 text-gray-600 hover:text-emerald-700'
+                  }`}
+                >
+                   <Ruler className="h-5 w-5" />
+                   <span className="text-[10px] font-bold uppercase tracking-wider">Scale</span>
+                </button>
+              </Tooltip>
+
+              <Tooltip text="Draw Lawn">
+                <button 
+                  onClick={() => {
+                       if (!scaleFactor) {
+                           alert("Please set the Scale (Ruler) first!");
+                           setMode('CALIBRATING');
+                           return;
+                       }
+                       setMode(mode === 'DRAWING' ? 'IDLE' : 'DRAWING');
+                  }}
+                  disabled={!image}
+                  className={`p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden ${
+                      mode === 'DRAWING' 
+                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105' 
+                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-amber-50 text-gray-600 hover:text-amber-700'
+                  }`}
+                >
+                   <PenTool className="h-5 w-5" />
+                   <span className="text-[10px] font-bold uppercase tracking-wider">Draw</span>
+                </button>
+              </Tooltip>
+             </div>
           </div>
           
           <input 
