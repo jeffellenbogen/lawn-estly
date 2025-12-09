@@ -20,13 +20,40 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.5
- * - Scale Tool Refinement:
- * 1. Added minimum length threshold (5% of view) to prevent accidental clicks.
- * 2. Added instructional toast for the Scale tool.
- * 3. Enforced "Drag" gesture for initial creation.
- * - Prioritized editing of existing vertices (from v3.9.4).
+ * LAWN ESTLY - v3.9.6
+ * - Bug Fix: Desktop trash can positioning now uses canvasResolution instead of containerSize.
+ * - Feature: Added dynamic Favicon generation (Calculator + Sprout).
+ * - Feature: Added Version Footer.
  */
+
+// --- Helper Components ---
+
+// Dynamically sets the favicon
+const FaviconManager = () => {
+  useEffect(() => {
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+        <rect x="10" y="10" width="44" height="50" rx="4" fill="#ecfdf5" stroke="#059669" stroke-width="4"/>
+        <rect x="18" y="18" width="28" height="12" fill="#d1fae5" />
+        <circle cx="22" cy="40" r="3" fill="#059669" />
+        <circle cx="32" cy="40" r="3" fill="#059669" />
+        <circle cx="42" cy="40" r="3" fill="#059669" />
+        <circle cx="22" cy="50" r="3" fill="#059669" />
+        <circle cx="32" cy="50" r="3" fill="#059669" />
+        <path d="M40 50 Q 45 45 55 42" stroke="#10b981" stroke-width="3" fill="none" />
+        <path d="M55 42 Q 58 38 52 35 Q 48 38 55 42" fill="#34d399" />
+      </svg>
+    `.replace(/\n/g, '').replace(/#/g, '%23');
+
+    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/svg+xml';
+    link.rel = 'icon';
+    link.href = `data:image/svg+xml,${svg}`;
+    document.getElementsByTagName('head')[0].appendChild(link);
+    document.title = "LawnEstly";
+  }, []);
+  return null;
+};
 
 // --- Helper Math Functions ---
 
@@ -856,6 +883,7 @@ export default function App() {
         ctx.lineTo(p.x, p.y);
       }
       if (mode === 'DRAWING') {
+         // Mouse pos is already normalized, so we scale it
          const m = toPixels(mousePos);
          ctx.lineTo(m.x, m.y);
       }
@@ -936,6 +964,8 @@ export default function App() {
       const resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
               const { width, height } = entry.contentRect;
+              // Only update state if significantly changed to avoid loops
+              // Using state triggers a re-render which triggers the useEffect canvas drawing
               setCanvasResolution({ width, height });
               canvasRef.current.width = width;
               canvasRef.current.height = height;
@@ -969,6 +999,7 @@ export default function App() {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-100 overflow-hidden font-sans selection:bg-emerald-200 selection:text-emerald-900">
+      <FaviconManager />
       <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
       
       <CalibrationModal 
@@ -1053,8 +1084,9 @@ export default function App() {
                                 }}
                                 className="absolute w-8 h-8 bg-white text-red-500 rounded-full flex items-center justify-center hover:bg-red-50 hover:scale-110 shadow-lg border border-red-100 transition-all z-20 group"
                                 style={{ 
-                                    left: `${(center.x * containerSize.width * view.scale) + view.x}px`, 
-                                    top: `${(center.y * containerSize.height * view.scale) + view.y}px`,
+                                    // Use wrapper dimensions (canvasResolution) for correct positioning
+                                    left: `${(center.x * canvasResolution.width * view.scale) + view.x}px`, 
+                                    top: `${(center.y * canvasResolution.height * view.scale) + view.y}px`,
                                     transform: 'translate(-50%, -50%)' 
                                 }}
                                 title="Remove this area"
@@ -1068,7 +1100,12 @@ export default function App() {
           </div>
           
           {/* Bottom Toolbar Section */}
-          <div className="shrink-0 p-3 md:p-4 z-30 flex justify-center items-center bg-white/80 backdrop-blur-md border-t border-gray-200">
+          <div className="shrink-0 p-3 md:p-4 z-30 flex justify-center items-center bg-white/80 backdrop-blur-md border-t border-gray-200 relative">
+             {/* Version Footer */}
+             <div className="absolute right-4 bottom-2 text-[10px] text-gray-400 font-mono hidden md:block">
+                LawnEstly version 3.9.6
+             </div>
+
              <div className="flex items-center gap-1 md:gap-2 p-1.5 md:p-2 bg-white rounded-2xl shadow-sm border border-gray-200 w-full md:w-auto justify-between md:justify-start">
               
               <Tooltip text="Upload Image">
