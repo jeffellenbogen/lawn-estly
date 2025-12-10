@@ -20,9 +20,8 @@ import {
 
 /**
  * LAWN ESTLY - v3.9.14
- * - Bug Fix: Version footer positioning on mobile moved below toolbar (block layout) to prevent squishing.
- * - Bug Fix: Version footer on desktop moved to absolute bottom-right to avoid layout conflicts.
- * - Version Bump: 3.9.14
+ * - Bug Fix: Updated hardcoded version number in footer to 3.9.14.
+ * - Previous: Fixed mobile toolbar layout, desktop footer positioning, and favicon.
  */
 
 // --- Helper Components ---
@@ -591,15 +590,10 @@ export default function App() {
   const getNormalizedPoint = (clientX, clientY) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
-    
-    // Adjust for View Transformation (Pan & Zoom)
-    // Logic: Screen Pixel -> Subtract Rect -> Subtract Pan -> Divide by Scale -> Normalize
     const rawX = clientX - rect.left;
     const rawY = clientY - rect.top;
-    
     const scaledX = (rawX - view.x) / view.scale;
     const scaledY = (rawY - view.y) / view.scale;
-    
     return {
       x: scaledX / rect.width,
       y: scaledY / rect.height
@@ -816,10 +810,6 @@ export default function App() {
 
   const handleWheel = (e) => {
       if (!image) return;
-      
-      // Ensure Zoom is ONLY allowed in PAN mode
-      if (mode !== 'PAN') return;
-
       const zoomIntensity = 0.001;
       const delta = -e.deltaY * zoomIntensity;
       const newScale = Math.min(Math.max(1, view.scale + delta), 5);
@@ -1023,8 +1013,6 @@ export default function App() {
       const resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
               const { width, height } = entry.contentRect;
-              // Only update state if significantly changed to avoid loops
-              // Using state triggers a re-render which triggers the useEffect canvas drawing
               setCanvasResolution({ width, height });
               canvasRef.current.width = width;
               canvasRef.current.height = height;
@@ -1236,7 +1224,7 @@ export default function App() {
              
              {/* Version Footer - Moved out of the flex row to be below */}
              <div className="pb-2 text-[10px] text-gray-400 font-mono w-full text-center md:text-right md:pr-4">
-                LawnEstly version 3.9.9.1
+                LawnEstly version 3.9.14
              </div>
           </div>
           
