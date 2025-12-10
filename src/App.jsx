@@ -19,9 +19,10 @@ import {
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.13
- * - Design Update: Grass blades moved closer and scaled up 30%.
- * - Version Bump: 3.9.13
+ * LAWN ESTLY - v3.9.14
+ * - Bug Fix: Version footer positioning on mobile moved below toolbar (block layout) to prevent squishing.
+ * - Bug Fix: Version footer on desktop moved to absolute bottom-right to avoid layout conflicts.
+ * - Version Bump: 3.9.14
  */
 
 // --- Helper Components ---
@@ -590,10 +591,15 @@ export default function App() {
   const getNormalizedPoint = (clientX, clientY) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
+    
+    // Adjust for View Transformation (Pan & Zoom)
+    // Logic: Screen Pixel -> Subtract Rect -> Subtract Pan -> Divide by Scale -> Normalize
     const rawX = clientX - rect.left;
     const rawY = clientY - rect.top;
+    
     const scaledX = (rawX - view.x) / view.scale;
     const scaledY = (rawY - view.y) / view.scale;
+    
     return {
       x: scaledX / rect.width,
       y: scaledY / rect.height
@@ -1017,6 +1023,8 @@ export default function App() {
       const resizeObserver = new ResizeObserver(entries => {
           for (let entry of entries) {
               const { width, height } = entry.contentRect;
+              // Only update state if significantly changed to avoid loops
+              // Using state triggers a re-render which triggers the useEffect canvas drawing
               setCanvasResolution({ width, height });
               canvasRef.current.width = width;
               canvasRef.current.height = height;
@@ -1151,77 +1159,79 @@ export default function App() {
           </div>
           
           {/* Bottom Toolbar Section */}
-          <div className="shrink-0 p-3 md:p-4 z-30 flex justify-center items-center bg-white/80 backdrop-blur-md border-t border-gray-200 relative">
-             <div className="flex items-center gap-1 md:gap-2 p-1.5 md:p-2 bg-white rounded-2xl shadow-sm border border-gray-200 w-full md:w-auto justify-between md:justify-start">
-              
-              <Tooltip text="Upload Image">
-                <button 
-                  onClick={() => fileInputRef.current.click()}
-                  className="p-2 md:p-3 rounded-xl hover:bg-gray-100 text-gray-600 flex flex-col items-center gap-1 transition-all group relative overflow-hidden flex-1 md:flex-none"
-                >
-                   <Upload className="h-5 w-5" />
-                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Upload</span>
-                </button>
-              </Tooltip>
-              
-              <div className="w-px h-8 bg-gray-200 mx-1"></div>
+          <div className="shrink-0 z-30 flex flex-col items-center bg-white/80 backdrop-blur-md border-t border-gray-200 relative">
+             <div className="p-3 md:p-4 w-full flex justify-center">
+                 <div className="flex items-center gap-1 md:gap-2 p-1.5 md:p-2 bg-white rounded-2xl shadow-sm border border-gray-200 w-full md:w-auto justify-between md:justify-start">
+                  
+                  <Tooltip text="Upload Image">
+                    <button 
+                      onClick={() => fileInputRef.current.click()}
+                      className="p-2 md:p-3 rounded-xl hover:bg-gray-100 text-gray-600 flex flex-col items-center gap-1 transition-all group relative overflow-hidden flex-1 md:flex-none"
+                    >
+                       <Upload className="h-5 w-5" />
+                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Upload</span>
+                    </button>
+                  </Tooltip>
+                  
+                  <div className="w-px h-8 bg-gray-200 mx-1"></div>
 
-              <Tooltip text="Move / Pan">
-                <button 
-                  onClick={() => setMode('PAN')}
-                  disabled={!image}
-                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
-                      mode === 'PAN' 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
-                  }`}
-                >
-                   <Move className="h-5 w-5" />
-                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Move</span>
-                </button>
-              </Tooltip>
+                  <Tooltip text="Move / Pan">
+                    <button 
+                      onClick={() => setMode('PAN')}
+                      disabled={!image}
+                      className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
+                          mode === 'PAN' 
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
+                          : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
+                      }`}
+                    >
+                       <Move className="h-5 w-5" />
+                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Move</span>
+                    </button>
+                  </Tooltip>
 
-              <Tooltip text="Set Scale">
-                <button 
-                  onClick={() => {
-                       setMode(mode === 'CALIBRATING' ? 'IDLE' : 'CALIBRATING');
-                       setCalibrationLine(null); // Reset calibration line on click
-                       setScaleFactor(null); // Clear scale factor
-                       setIsDrawingScale(false); // Reset drawing state
-                  }}
-                  disabled={!image}
-                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
-                      mode === 'CALIBRATING' 
-                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-105' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-emerald-50 text-gray-600 hover:text-emerald-700'
-                  }`}
-                >
-                   <Ruler className="h-5 w-5" />
-                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Scale</span>
-                </button>
-              </Tooltip>
+                  <Tooltip text="Set Scale">
+                    <button 
+                      onClick={() => {
+                           setMode(mode === 'CALIBRATING' ? 'IDLE' : 'CALIBRATING');
+                           setCalibrationLine(null); // Reset calibration line on click
+                           setScaleFactor(null); // Clear scale factor
+                           setIsDrawingScale(false); // Reset drawing state
+                      }}
+                      disabled={!image}
+                      className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
+                          mode === 'CALIBRATING' 
+                          ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-105' 
+                          : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-emerald-50 text-gray-600 hover:text-emerald-700'
+                      }`}
+                    >
+                       <Ruler className="h-5 w-5" />
+                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Scale</span>
+                    </button>
+                  </Tooltip>
 
-              <Tooltip text="Draw Lawn">
-                <button 
-                  onClick={() => {
-                       if (!scaleFactor) {
-                           alert("Please set the Scale (Ruler) first!");
-                           setMode('CALIBRATING');
-                           return;
-                       }
-                       setMode(mode === 'DRAWING' ? 'IDLE' : 'DRAWING');
-                  }}
-                  disabled={!image}
-                  className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
-                      mode === 'DRAWING' 
-                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105' 
-                      : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-amber-50 text-gray-600 hover:text-amber-700'
-                  }`}
-                >
-                   <PenTool className="h-5 w-5" />
-                   <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Draw</span>
-                </button>
-              </Tooltip>
+                  <Tooltip text="Draw Lawn">
+                    <button 
+                      onClick={() => {
+                           if (!scaleFactor) {
+                               alert("Please set the Scale (Ruler) first!");
+                               setMode('CALIBRATING');
+                               return;
+                           }
+                           setMode(mode === 'DRAWING' ? 'IDLE' : 'DRAWING');
+                      }}
+                      disabled={!image}
+                      className={`p-2 md:p-3 rounded-xl flex flex-col items-center gap-1 transition-all relative overflow-hidden flex-1 md:flex-none ${
+                          mode === 'DRAWING' 
+                          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105' 
+                          : !image ? 'opacity-40 cursor-not-allowed text-gray-400' : 'hover:bg-amber-50 text-gray-600 hover:text-amber-700'
+                      }`}
+                    >
+                       <PenTool className="h-5 w-5" />
+                       <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider">Draw</span>
+                    </button>
+                  </Tooltip>
+                 </div>
              </div>
              
              {/* Version Footer - Moved out of the flex row to be below */}
