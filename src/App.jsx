@@ -14,31 +14,50 @@ import {
   ChevronRight,
   Printer,
   MousePointer2,
-  Sprout,
   Move,
   Truck
 } from 'lucide-react';
 
 /**
- * LAWN ESTLY - v3.9.9.1
- * - Bug Fix: Aggressive Favicon replacement to override Vite default on mobile.
- * - Bug Fix: Print Report CSS tuned with max-height to guarantee 1-page output.
+ * LAWN ESTLY - v3.9.10
+ * - Design Update: Replaced Dicot (Leaf) icon with Monocot (Grass) icon.
+ * - Icon Consistency: Custom SVG used for both Header Logo and Favicon.
+ * - Version Bump: 3.9.10
  */
 
 // --- Helper Components ---
 
+// Custom Grass Icon Component for Header
+const GrassIcon = ({ className }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    viewBox="0 0 64 64" 
+    fill="none" 
+    className={className}
+    stroke="currentColor"
+    strokeWidth="6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Left Blade */}
+    <path d="M26 54 Q 22 35 12 20" />
+    {/* Center Blade (Tallest) */}
+    <path d="M32 54 Q 32 25 36 10" />
+    {/* Right Blade */}
+    <path d="M38 54 Q 46 35 52 22" />
+  </svg>
+);
+
 // Dynamically sets the favicon
 const FaviconManager = () => {
   useEffect(() => {
-    // Custom Sprout Icon matching the uploaded image (Base, Stem, Two Leaves)
-    // Colors: Background #d1fae5 (Emerald 100), Stroke #065f46 (Emerald 800)
+    // Custom Grass Icon (Monocot) - 3 Blades
     const svg = `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-        <rect width="64" height="64" rx="16" fill="#d1fae5"/>
-        <path d="M20 52H44" stroke="#065f46" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M32 52Q32 35 40 18" stroke="#065f46" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M32 40 Q 15 40 15 28 Q 15 15 32 40" stroke="#065f46" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M38 26 Q 55 26 55 14 Q 55 5 38 26" stroke="#065f46" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect width="64" height="64" rx="16" fill="#ecfdf5"/>
+        <path d="M26 54 Q 22 35 12 20" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M32 54 Q 32 25 36 10" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M38 54 Q 46 35 52 22" stroke="#059669" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `.replace(/\n/g, '').replace(/#/g, '%23');
 
@@ -122,7 +141,8 @@ const Header = ({ onToggleSidebar, sidebarOpen }) => (
     <div className="flex items-center space-x-3">
       <div className="bg-emerald-100 p-2 rounded-lg flex items-center justify-center relative">
         <Calculator className="h-5 w-5 text-emerald-700 absolute -left-1 -bottom-1 bg-white rounded-full p-0.5" />
-        <Sprout className="h-6 w-6 text-emerald-600" />
+        {/* Replaced Library Sprout with Custom Grass Icon */}
+        <GrassIcon className="h-6 w-6 text-emerald-600" />
       </div>
       <h1 className="text-xl font-bold tracking-tight font-sans">Lawn<span className="text-emerald-600">Estly</span></h1>
     </div>
@@ -455,24 +475,27 @@ export default function App() {
             <head>
               <title>LawnEstly Report</title>
               <style>
-                body { font-family: system-ui, -apple-system, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; color: #1f2937; }
-                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; border-bottom: 3px solid #059669; padding-bottom: 10px; }
+                body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; max-width: 1000px; margin: 0 auto; color: #1f2937; }
+                .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; border-bottom: 3px solid #059669; padding-bottom: 20px; }
                 .brand { font-size: 1.5rem; font-weight: 800; color: #111827; }
                 .brand span { color: #059669; }
-                .price-value { font-size: 2.5rem; font-weight: 800; color: #111827; line-height: 1; margin-top: 5px; }
-                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-                .stat-card { background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; }
-                .stat-label { font-size: 0.6rem; text-transform: uppercase; font-weight: 700; color: #6b7280; margin-bottom: 4px; }
-                .stat-value { font-size: 1rem; font-weight: 700; color: #111827; }
-                .stat-sub { font-size: 0.6rem; color: #6b7280; margin-top: 2px; }
+                .meta { text-align: right; color: #6b7280; font-size: 0.875rem; }
+                .price-tag { text-align: right; }
+                .price-label { text-transform: uppercase; font-size: 0.75rem; font-weight: 700; color: #059669; letter-spacing: 0.05em; }
+                .price-value { font-size: 3rem; font-weight: 800; color: #111827; line-height: 1; margin-top: 5px; }
+                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
+                .stat-card { background: #f9fafb; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; }
+                .stat-label { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #6b7280; margin-bottom: 8px; }
+                .stat-value { font-size: 1.25rem; font-weight: 700; color: #111827; }
+                .stat-sub { font-size: 0.75rem; color: #6b7280; margin-top: 4px; }
                 /* CONSTRICT IMAGE HEIGHT FOR 1-PAGE PRINT */
-                .map-container { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-height: 50vh; display: flex; justify-content: center; background: #f9fafb; }
+                .map-container { border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-height: 50vh; display: flex; justify-content: center; background: #f9fafb; }
                 img { max-width: 100%; max-height: 100%; object-fit: contain; }
-                .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 0.6rem; }
+                .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 0.75rem; }
                 @media print { 
                     body { padding: 0; margin: 0.5cm; } 
                     .stat-card { border: 1px solid #d1d5db; } 
-                    .map-container { max-height: 45vh; }
+                    .map-container { max-height: 50vh; }
                 }
               </style>
             </head>
@@ -480,14 +503,13 @@ export default function App() {
               <div class="header">
                 <div>
                   <div class="brand">Lawn<span>Estly</span></div>
-                  <div style="color: #6b7280; font-size: 0.8rem; margin-top: 2px;">Professional Estimate Report</div>
+                  <div style="color: #6b7280; margin-top: 5px;">Professional Estimate Report</div>
                 </div>
-                <div style="text-align: right;">
-                  <div style="text-transform: uppercase; font-size: 0.6rem; font-weight: 700; color: #059669; letter-spacing: 0.05em;">Estimated Total</div>
+                <div class="price-tag">
+                  <div class="price-label">Estimated Total</div>
                   <div class="price-value">$${estimatedBid.toFixed(2)}</div>
                 </div>
               </div>
-
               <div class="stats-grid">
                 <div class="stat-card">
                   <div class="stat-label">Mowable Area</div>
@@ -510,23 +532,10 @@ export default function App() {
                    <div class="stat-sub">Markup: ${((complexityMultipliers[complexity] - 1) * 100).toFixed(0)}%</div>
                 </div>
               </div>
-
-              <div style="font-size: 0.7rem; font-weight: 700; color: #6b7280; margin-bottom: 5px; text-transform: uppercase;">Property Analysis</div>
-              <div class="map-container">
-                 <img src="${dataUrl}" />
-              </div>
-              
-              <div class="footer">
-                Generated by LawnEstly. This estimate is based on image analysis and may require on-site verification.
-              </div>
-
-              <script>
-                window.onload = () => { 
-                    setTimeout(() => {
-                        window.print();
-                    }, 500);
-                };
-              </script>
+              <div class="stat-label" style="margin-bottom: 10px;">Property Analysis</div>
+              <div class="map-container"><img src="${dataUrl}" /></div>
+              <div class="footer">Generated by LawnEstly. This estimate is based on image analysis and may require on-site verification.</div>
+              <script>window.onload = () => { setTimeout(() => { window.print(); }, 500); };</script>
             </body>
           </html>
         `;
@@ -570,15 +579,10 @@ export default function App() {
   const getNormalizedPoint = (clientX, clientY) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
-    
-    // Adjust for View Transformation (Pan & Zoom)
-    // Logic: Screen Pixel -> Subtract Rect -> Subtract Pan -> Divide by Scale -> Normalize
     const rawX = clientX - rect.left;
     const rawY = clientY - rect.top;
-    
     const scaledX = (rawX - view.x) / view.scale;
     const scaledY = (rawY - view.y) / view.scale;
-    
     return {
       x: scaledX / rect.width,
       y: scaledY / rect.height
